@@ -95,7 +95,8 @@ fmod FUN-TRAN2 is
    var Tail : Idn* .
 
    eq compileIdn(nilIdn*) = nilFormals .
-   eq compileIdn(Head ; Tail) = idnToId(Head) compileIdn(Tail) .    
+   --- eq compileIdn(Head ; Tail) = idnToId(Head) compileIdn(Tail) .    
+   eq compileIdn(Head ; Tail) = compileIdn(Tail) idnToId(Head) . *** por algum motivo isso deve ser invertido   
 
 --- Testing
 
