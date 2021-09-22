@@ -5,7 +5,7 @@ fmod FUN-LEX is
      inc LEXICAL .
      inc BASIC-LEX .
 
-     eq keywords = ('fun '`( '`) '= '`, '~ '+ '- '* '/ '>= '> '<= '< '== 'or 'and 'if 'then 'else) .
+     eq keywords = ('fun '`( '`) '= '`, '; '| '~ '+ '- '* '/ '>= '> '<= '< '== 'or 'and 'if 'then 'else) .
      eq ignore = nil .
 
      var Q : Qid .
@@ -38,6 +38,12 @@ fmod FUN-GRM is
      inc BOOL .
      sorts Expr Idn Val .
      subsort Idn Val < Expr .  
+
+     sort Idn* .
+     sort Expr* .
+     subsort Idn < Idn* .
+     subsort Expr < Expr* .  
+
      op idn : Qid -> Idn .
      op rat : Rat -> Val .
      op flo : Float -> Val .
@@ -46,9 +52,16 @@ fmod FUN-GRM is
      ops _+_ _*_ _-_ _/_ _==_ _<_ _<=_ _>_ _>=_ _or_ _and_ : Expr Expr -> Expr [gather(E e) prec 20] .
      op ~_ : Expr -> Expr .
      op if_then_else_ : Expr Expr Expr -> Expr [prec 40] .
-     op fun_(_) =_ : Idn Idn Expr -> Expr [prec 50] .
-     op _(_) : Idn Expr -> Expr [prec 10] . 
+     op fun_(_) =_ : Idn Idn* Expr -> Expr [prec 50] .
+     op _(_) : Idn Expr* -> Expr [prec 10] . 
      op _,_ : Expr Expr -> Expr [prec 60 assoc] .
+
+     op nilIdn* : -> Idn* .
+     op _;_ : Idn* Idn* -> Idn* [assoc id: nilIdn*] .
+
+     op nilExpr* : -> Expr* .
+     op _|_ : Expr* Expr* -> Expr* [assoc id: nilExpr*] .
+
  endfm 
 
 fmod FUN-PARSER is 
@@ -65,53 +78,93 @@ fmod FUN-PARSER is
 endfm
 
 fmod FUN-TRAN2 is
-     inc FUN-GRM .
-     inc BASIC-VALUES .
-     inc ID-IR .
-     inc REC-IR .
+   inc FUN-GRM .
+   inc BASIC-VALUES .
+   inc ID-IR .
+   inc REC-IR .
+   inc FORMALS .
+   inc ACTUALS .
 
-     op compileIdn : Idn -> Id .
-     var Q : Qid .
-     eq compileIdn(idn(Q)) = id(Q) .
+   op idnToId : Idn -> Id .
+   var Q : Qid .
+   eq idnToId(idn(Q)) = id(Q) .
 
-     op compileExpr : Expr -> Statement .
+   ***op compileIdn : Idn -> Id .
+   op compileIdn : Idn* -> Formals .
+   var Head : Idn .
+   var Tail : Idn* .
 
-     var R : Rat . var F : Float . var S : String . var B : Bool .
-     vars E E1 E2 E3 : Expr .
-     var I I1 I2 : Idn . 
+   eq compileIdn(nilIdn*) = nilFormals .
+   eq compileIdn(Head ; Tail) = idnToId(Head) compileIdn(Tail) .    
 
-     eq compileExpr(rat(R)) = exp(val(R)) .
-     eq compileExpr(flo(F)) = exp(val(F)) .
-     eq compileExpr(str(S)) = exp(val(S)) .
-     eq compileExpr(boo(B)) = exp(val(B)) .
-     eq compileExpr(idn(Q)) = exp(id(Q)) .
+--- Testing
 
-     eq compileExpr(E1 + E2) = sum(compileExpr(E1), compileExpr(E2)) .
-     eq compileExpr(E1 - E2) = sub(compileExpr(E1), compileExpr(E2)) .
-     eq compileExpr(E1 * E2) = mul(compileExpr(E1), compileExpr(E2)) .
-     eq compileExpr(E1 / E2) = div(compileExpr(E1), compileExpr(E2)) .
-     eq compileExpr(E1 > E2) = gth(compileExpr(E1), compileExpr(E2)) .
-     eq compileExpr(E1 < E2) = lth(compileExpr(E1), compileExpr(E2)) .
-     eq compileExpr(E1 >= E2) = geq(compileExpr(E1), compileExpr(E2)) .
-     eq compileExpr(E1 <= E2) = leq(compileExpr(E1), compileExpr(E2)) .
-     eq compileExpr(E1 == E2) = equ(compileExpr(E1), compileExpr(E2)) .
-     eq compileExpr(E1 or E2) = lor(compileExpr(E1), compileExpr(E2)) .
-     eq compileExpr(E1 and E2) = lan(compileExpr(E1), compileExpr(E2)) .
-     eq compileExpr(~ E) = not(compileExpr(E)) .
+   op compileSeveralExpr : Expr* -> Actuals .
+   var HeadExpr : Expr .
+   var TailExpr : Expr* .
+   
+   eq compileSeveralExpr(nilExpr*) = nilActuals .
+   eq compileSeveralExpr(HeadExpr | TailExpr) = compileExpr(HeadExpr) compileSeveralExpr(TailExpr) .  
 
-     eq compileExpr(if E1 then E2 else E3) = 
-        ite(compileExpr(E1), compileExpr(E2), compileExpr(E3)) .
+--- 
 
-     eq compileExpr(fun I1 (I2) = E) = compileDec(fun I1 (I2) = E) .
+   op compileExpr : Expr -> Statement .
 
-     eq compileExpr(I(E)) = recapp(compileIdn(I), compileExpr(E)) .
+   var R : Rat . var F : Float . var S : String . var B : Bool .
+   vars E E1 E2 E3 : Expr .
+   var I I1 I2 : Idn . 
+   var I3 : Idn* .
+   var E4 : Expr* .
 
-     eq compileExpr((fun I1 (I2) = E1, E2)) = 
-        let(compileDec(fun I1 (I2) = E1), compileExpr(E2)) .
+   eq compileExpr(rat(R)) = exp(val(R)) .
+   eq compileExpr(flo(F)) = exp(val(F)) .
+   eq compileExpr(str(S)) = exp(val(S)) .
+   eq compileExpr(boo(B)) = exp(val(B)) .
+   eq compileExpr(idn(Q)) = exp(id(Q)) .
 
-     op compileDec : Expr -> Dec .
-     eq compileDec(fun I1 (I2) = E) = 
-        rec(compileIdn(I1), lambda(compileIdn(I2), compileExpr(E))) . 
+   eq compileExpr(E1 + E2) = sum(compileExpr(E1), compileExpr(E2)) .
+   eq compileExpr(E1 - E2) = sub(compileExpr(E1), compileExpr(E2)) .
+   eq compileExpr(E1 * E2) = mul(compileExpr(E1), compileExpr(E2)) .
+   eq compileExpr(E1 / E2) = div(compileExpr(E1), compileExpr(E2)) .
+   eq compileExpr(E1 > E2) = gth(compileExpr(E1), compileExpr(E2)) .
+   eq compileExpr(E1 < E2) = lth(compileExpr(E1), compileExpr(E2)) .
+   eq compileExpr(E1 >= E2) = geq(compileExpr(E1), compileExpr(E2)) .
+   eq compileExpr(E1 <= E2) = leq(compileExpr(E1), compileExpr(E2)) .
+   eq compileExpr(E1 == E2) = equ(compileExpr(E1), compileExpr(E2)) .
+   eq compileExpr(E1 or E2) = lor(compileExpr(E1), compileExpr(E2)) .
+   eq compileExpr(E1 and E2) = lan(compileExpr(E1), compileExpr(E2)) .
+   eq compileExpr(~ E) = not(compileExpr(E)) .
+
+***(
+   eq compileExpr(if E1 then E2 else E3) = 
+      ite(compileExpr(E1), compileExpr(E2), compileExpr(E3)) .
+
+   eq compileExpr(fun I1 (I3) = E) = compileDec(fun I1 (I3) = E) .
+
+   eq compileExpr(I(E4)) = recapp(compileIdn(I), compileExpr(E4)) .
+
+   eq compileExpr((fun I1 (I2) = E1, E2)) = 
+      let(compileDec(fun I1 (I2) = E1), compileExpr(E2)) .
+
+   op compileDec : Expr -> Dec .
+   eq compileDec(fun I1 (I2) = E) = 
+      rec(compileIdn(I1), lambda(compileIdn(I2), compileExpr(E))) . 
+)
+
+   eq compileExpr(if E1 then E2 else E3) = 
+      ite(compileExpr(E1), compileExpr(E2), compileExpr(E3)) .
+
+   eq compileExpr(fun I1 (I3) = E) = compileDec(fun I1 (I3) = E) .
+
+   eq compileExpr(I(E4)) = recapp(compileIdn(I), compileSeveralExpr(E4)) .
+
+   eq compileExpr((fun I1 (I3) = E1, E2)) = 
+      let(compileDec(fun I1 (I3) = E1), compileExpr(E2)) .
+
+   op compileDec : Expr -> Dec .
+   eq compileDec(fun I1 (I3) = E) = 
+      rec(compileIdn(I1), lambda(compileIdn(I3), compileExpr(E))) . 
+
 endfm
 
 fmod FUN-RUN-TIME is 
