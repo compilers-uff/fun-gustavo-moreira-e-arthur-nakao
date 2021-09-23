@@ -45,6 +45,10 @@ Gustavo Moreira e Arthur Nakao
 
 ### fib (tail recursion)
 
+É importante notar que os formals (;) e os actuals (|) possuem separadores distintos para não criar conflito entre os operadores definidos. Ainda, devem haver espaços em branco antes e depois dos separadores: " ; " e " | ".  
+
+- red pp(out(exec(comp(parse("fun fib(n ; a ; b) = if n == 0 then a else if n == 1 then b else fib(n - 1 | b | a + b), fib(10 | 0 | 1)"))))) .
+
 ### apply
 
 - red pp(out(exec(comp(parse("fun fat(x) = if x == 0 then 1 else x * fat(x - 1), fun apply(f ; x) = f(x), apply(fat | 10)"))))) .
