@@ -95,10 +95,8 @@ fmod FUN-TRAN2 is
    var Tail : Idn* .
 
    eq compileIdn(nilIdn*) = nilFormals .
-   --- eq compileIdn(Head ; Tail) = idnToId(Head) compileIdn(Tail) .    
+   --- eq compileIdn(Head ; Tail) = idnToId(Head) compileIdn(Tail) . 
    eq compileIdn(Head ; Tail) = compileIdn(Tail) idnToId(Head) . *** por algum motivo isso deve ser invertido   
-
---- Testing
 
    op compileSeveralExpr : Expr* -> Actuals .
    var HeadExpr : Expr .
@@ -106,8 +104,6 @@ fmod FUN-TRAN2 is
    
    eq compileSeveralExpr(nilExpr*) = nilActuals .
    eq compileSeveralExpr(HeadExpr | TailExpr) = compileExpr(HeadExpr) compileSeveralExpr(TailExpr) .  
-
---- 
 
    op compileExpr : Expr -> Statement .
 
@@ -135,22 +131,6 @@ fmod FUN-TRAN2 is
    eq compileExpr(E1 or E2) = lor(compileExpr(E1), compileExpr(E2)) .
    eq compileExpr(E1 and E2) = lan(compileExpr(E1), compileExpr(E2)) .
    eq compileExpr(~ E) = not(compileExpr(E)) .
-
-***(
-   eq compileExpr(if E1 then E2 else E3) = 
-      ite(compileExpr(E1), compileExpr(E2), compileExpr(E3)) .
-
-   eq compileExpr(fun I1 (I3) = E) = compileDec(fun I1 (I3) = E) .
-
-   eq compileExpr(I(E4)) = recapp(compileIdn(I), compileExpr(E4)) .
-
-   eq compileExpr((fun I1 (I2) = E1, E2)) = 
-      let(compileDec(fun I1 (I2) = E1), compileExpr(E2)) .
-
-   op compileDec : Expr -> Dec .
-   eq compileDec(fun I1 (I2) = E) = 
-      rec(compileIdn(I1), lambda(compileIdn(I2), compileExpr(E))) . 
-)
 
    eq compileExpr(if E1 then E2 else E3) = 
       ite(compileExpr(E1), compileExpr(E2), compileExpr(E3)) .

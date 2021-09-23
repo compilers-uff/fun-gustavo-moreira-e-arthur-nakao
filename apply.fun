@@ -3,5 +3,7 @@ fun fat(x) =
     then 1
     else x * fat(x - 1),
 
-fun apply(f) =
-    f(x)
+fun apply(f ; x) =
+    f(x),
+
+apply(fat | 10)

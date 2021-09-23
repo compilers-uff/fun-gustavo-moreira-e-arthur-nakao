@@ -1,6 +1,6 @@
-fun fact(n ; a) =
+fun fat(n ; a) =
     if n == 1
     then a
-    else return fact(n - 1 | n * a),
+    else return fat(n - 1 | n * a),
 
-fact(5 | 1)
+fat(5 | 1)
